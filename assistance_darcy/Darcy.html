@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARCY - Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-deep: #080c14;
+            --bg-surface: #0b1020;
+            --glass-bg: rgba(10, 20, 38, 0.45);
+            --glass-border: rgba(0, 255, 217, 0.18);
+            --glass-border-hover: rgba(0, 255, 217, 0.38);
+            --accent: #00ffd9;
+            --accent-glow: rgba(0, 255, 217, 0.4);
+            --text-primary: #f0f4fa;
+            --text-secondary: #a0aec4;
+            --text-muted: #6b7a96;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #070a13 0%, #030509 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient background glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1200px;
+            height: 800px;
+            background: radial-gradient(ellipse at center, rgba(0, 255, 217, 0.12) 0%, rgba(0, 224, 200, 0.03) 50%, transparent 80%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── Main Interface Container ─── */
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 980px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4rem;
+        }
+
+        .main-panel {
+            flex: 1.3;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+            width: 100%;
+        }
+
+        .core-panel {
+            flex: 0.7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ─── Engine Status Badge ─── */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.9rem;
+            background: rgba(0, 255, 217, 0.05);
+            border: 1px solid rgba(0, 255, 217, 0.15);
+            border-radius: 30px;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 0 15px rgba(0, 255, 217, 0.03);
+            opacity: 0;
+            animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+            align-self: flex-start;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent);
+            animation: statusPulse 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes statusPulse {
+            0% {
+                opacity: 0.4;
+            }
+
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 12px var(--accent);
+            }
+        }
+
+        .status-text {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent);
+        }
+
+        /* ─── Header ─── */
+        .header {
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+            text-align: left;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--accent) 0%, #00ffea 50%, #00ccb4 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            text-align: left;
+        }
+
+        .header p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-align: left;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ─── Core Sphere ─── */
+        .core-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            animation: fadeInRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(60px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .core-sphere {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 255, 217, 0.3) 0%, rgba(0, 200, 180, 0.05) 70%, transparent 100%);
+            border: 2px solid rgba(0, 255, 217, 0.2);
+            box-shadow: 0 0 40px rgba(0, 255, 217, 0.15), inset 0 0 20px rgba(0, 255, 217, 0.1);
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .core-sphere::before {
+            content: '';
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 255, 217, 0.15);
+            animation: spin 20s linear infinite;
+        }
+
+        .core-sphere::after {
+            content: '';
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 255, 217, 0.08);
+            animation: spin 10s linear infinite reverse;
+        }
+
+        .core-sphere:hover {
+            transform: scale(1.08);
+            border-color: var(--accent);
+            box-shadow: 0 0 60px var(--accent-glow), inset 0 0 30px rgba(0, 255, 217, 0.2);
+        }
+
+        .core-sphere.listening {
+            border-color: var(--accent);
+            box-shadow: 0 0 80px var(--accent-glow), inset 0 0 40px rgba(0, 255, 217, 0.3);
+            animation: breathing 1.5s ease-in-out infinite alternate;
+        }
+
+        .core-sphere.listening::before {
+            border-color: var(--accent);
+            animation: spin 4s linear infinite;
+        }
+
+        /* Speaking State Neon Blue Glow */
+        .core-sphere.speaking {
+            border-color: #00b4ff;
+            box-shadow: 0 0 130px 25px rgba(0, 180, 255, 0.75), 0 0 70px 10px rgba(0, 180, 255, 0.5), inset 0 0 35px rgba(0, 180, 255, 0.35);
+            animation: speakingPulse 2.8s ease-in-out infinite alternate;
+            will-change: transform, box-shadow;
+            /* Hardware acceleration for 60fps smoothness */
+        }
+
+        @keyframes speakingPulse {
+            0% {
+                transform: scale(1.03);
+                box-shadow: 0 0 90px 15px rgba(0, 180, 255, 0.5), 0 0 45px 5px rgba(0, 180, 255, 0.35), inset 0 0 25px rgba(0, 180, 255, 0.25);
+            }
+
+            100% {
+                transform: scale(1.10);
+                box-shadow: 0 0 170px 45px rgba(0, 180, 255, 0.85), 0 0 100px 25px rgba(0, 180, 255, 0.65), inset 0 0 45px rgba(0, 180, 255, 0.45);
+            }
+        }
+
+        .mic-icon {
+            font-size: 2.2rem;
+            color: var(--accent);
+            transition: all 0.3s ease;
+        }
+
+        .core-sphere.listening .mic-icon {
+            color: #ffffff;
+            text-shadow: 0 0 10px var(--accent);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes breathing {
+            0% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1.12);
+            }
+        }
+
+        /* ─── Captions Card ─── */
+        .caption-card {
+            width: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            box-shadow: 0 4px 30px rgba(0, 255, 217, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent);
+            text-align: left;
+        }
+
+        .transcript-text {
+            font-size: 1.05rem;
+            color: #f4f7fc;
+            line-height: 1.6;
+            min-height: 24px;
+            text-align: left;
+        }
+
+        .assistant-reply {
+            border-top: 1px solid rgba(0, 255, 217, 0.1);
+            padding-top: 0.8rem;
+            margin-top: 0.4rem;
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            text-align: left;
+            display: none;
+        }
+
+        .assistant-reply.active {
+            display: block;
+        }
+
+        /* ─── Text Input Row ─── */
+        .input-bar {
+            width: 100%;
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+        }
+
+        .input-bar input {
+            flex: 1;
+            background: rgba(6, 12, 24, 0.65);
+            border: 1px solid rgba(0, 255, 217, 0.15);
+            border-radius: 12px;
+            color: #ffffff;
+            padding: 0.85rem 1.25rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-bar input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 255, 217, 0.1), inset 0 0 10px rgba(0, 255, 217, 0.05);
+        }
+
+        .send-btn {
+            background: rgba(0, 255, 217, 0.08);
+            border: 1px solid rgba(0, 255, 217, 0.2);
+            color: var(--accent);
+            padding: 0.85rem 1.75rem;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .send-btn:hover {
+            background: rgba(0, 255, 217, 0.15);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .send-btn:active {
+            transform: translateY(0) scale(0.97);
+        }
+
+        /* ─── Footer ─── */
+        .footer {
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1s forwards;
+            margin-top: 1.5rem;
+        }
+
+        .footer p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .accent-dot {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
+            margin: 0 6px;
+            vertical-align: middle;
+            box-shadow: 0 0 6px var(--accent-glow);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="main-panel">
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                <span class="status-text">DARCY Assistant Online</span>
+            </div>
+
+            <div class="header">
+                <h1>DARCY AI</h1>
+                <p>Advanced Personal Intelligence</p>
+            </div>
+
+            <div class="caption-card">
+                <div>
+                    <div class="label">User Query</div>
+                    <div class="transcript-text" id="transcript">Click the sphere on the right and start speaking...
+                    </div>
+                </div>
+                <div class="assistant-reply" id="replyBox">
+                    <div class="label">DARCY Reply</div>
+                    <div class="transcript-text" id="replyText">Processing brainwave patterns...</div>
+                </div>
+            </div>
+
+            <div class="input-bar">
+                <input type="text" id="textInput" placeholder="Type a message or command for DARCY...">
+                <button class="send-btn" id="sendBtn">Send</button>
+            </div>
+
+            <div class="footer">
+                <p>Cybernetic Core System<span class="accent-dot"></span>Active Status Mode</p>
+            </div>
+        </div>
+
+        <div class="core-panel">
+            <div class="core-container">
+                <div class="core-sphere" id="micBtn" title="Click to Speak">
+                    <span class="mic-icon">O</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── Voice Interaction Core ───
+        const API_CHAT = 'http://127.0.0.1:8000/api/darcy';
+        const API_TTS = 'http://127.0.0.1:8000/api/tts';
+
+        const micBtn = document.getElementById('micBtn');
+        const transcript = document.getElementById('transcript');
+        const replyBox = document.getElementById('replyBox');
+        const replyText = document.getElementById('replyText');
+        const textInput = document.getElementById('textInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        let audioPlayer = new Audio();
+
+        // Toggle glowing class during playback
+        audioPlayer.addEventListener('play', () => {
+            micBtn.classList.add('speaking');
+        });
+        audioPlayer.addEventListener('pause', () => {
+            micBtn.classList.remove('speaking');
+        });
+        audioPlayer.addEventListener('ended', () => {
+            micBtn.classList.remove('speaking');
+        });
+
+        // Browser Web Speech API setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isListening = false;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                micBtn.classList.add('listening');
+                transcript.innerText = "Listening closely...";
+                replyBox.style.display = 'none';
+                audioPlayer.pause();
+            };
+
+            recognition.onresult = (event) => {
+                const result = event.results[0][0].transcript;
+                transcript.innerText = result;
+                processCommand(result);
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                transcript.innerText = "Error capturing speech. Please try again or type below.";
+                micBtn.classList.remove('listening');
+                isListening = false;
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('listening');
+                isListening = false;
+            };
+        } else {
+            transcript.innerText = "Speech Recognition API not supported in this browser. Please type below.";
+            micBtn.style.cursor = 'not-allowed';
+            micBtn.title = "Not Supported";
+        }
+
+        micBtn.addEventListener('click', () => {
+            if (!recognition) return;
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+
+        // ─── Process Query ───
+        async function processCommand(text) {
+            if (!text.trim()) return;
+
+            replyBox.style.display = 'block';
+            replyText.innerText = "DARCY is processing...";
+
+            try {
+                // 1. Send query to Gemini API
+                const response = await fetch(API_CHAT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) throw new Error('Brainwave core rejected request.');
+
+                const data = await response.json();
+                const reply = data.response;
+                replyText.innerText = reply;
+
+                // 2. Play high-quality neural TTS audio response
+                playTTS(reply);
+
+            } catch (error) {
+                console.error("Processing error:", error);
+                replyText.innerText = "Forgive me, Sir. I encountered a cerebral processing error.";
+            }
+        }
+
+        // Play synthesized neural voice from backend
+        function playTTS(text) {
+            const audioUrl = `${API_TTS}?text=${encodeURIComponent(text)}`;
+            audioPlayer.src = audioUrl;
+            audioPlayer.play().catch(e => console.error("Audio playback error:", e));
+        }
+
+        // ─── Fallback Input Triggers ───
+        sendBtn.addEventListener('click', () => {
+            const val = textInput.value.trim();
+            if (val) {
+                transcript.innerText = val;
+                textInput.value = "";
+                processCommand(val);
+            }
+        });
+
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const val = textInput.value.trim();
+                if (val) {
+                    transcript.innerText = val;
+                    textInput.value = "";
+                    processCommand(val);
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>
